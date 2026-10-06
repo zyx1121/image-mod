@@ -1,0 +1,10 @@
+{
+  "name": "image-mod",
+  "version": "0.1.0",
+  "description": "See the images you paste into Claude Code: thumbnails above the prompt while the draft holds them, and the picture under each sent message. Needs a terminal with kitty graphics (Ghostty, kitty).",
+  "author": {
+    "name": "zyx1121",
+    "url": "https://github.com/zyx1121"
+  },
+  "types": "./types/index.d.ts"
+}

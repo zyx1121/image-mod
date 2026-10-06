@@ -1,0 +1,17 @@
+{
+  "name": "image-mod",
+  "owner": {
+    "name": "zyx1121",
+    "url": "https://github.com/zyx1121"
+  },
+  "description": "Marketplace for the image-mod plugin: previews of pasted images in Claude Code.",
+  "plugins": [
+    {
+      "name": "image-mod",
+      "source": "./",
+      "description": "Pasted images shown above the prompt and under sent messages.",
+      "category": "productivity",
+      "tags": ["images", "paste", "band", "function-hooks"]
+    }
+  ]
+}
