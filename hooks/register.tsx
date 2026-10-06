@@ -117,27 +117,31 @@ export const register: Register = on => {
     if (e.props.hasSurvey || ready.length === 0 || e.surface !== 'terminal') return next(e)
 
     const { Box, Text, Image } = $.ui.resolve(e)
-    let room = e.props.bodyColumns - 4
+    // Same shape as the other bands: one cell of padding, an emoji, a space.
+    let room = e.props.bodyColumns - 4 - 2 - 3
 
     return (
       <Box flexDirection="column">
-        <Box flexDirection="row" gap={1}>
-          {ready.map(([n, image]) => {
-            const columns = columnsFor(image, BAND_ROWS, Math.max(1, room))
-            room -= columns + 1
-            return room < 0 ? null : (
-              <Box key={`b${n}`} flexDirection="column">
-                <Image
-                  key={`band-${n}`}
-                  source={{ file: image.path, format: 'png', generation: Math.round(image.at) }}
-                  columns={columns}
-                  rows={BAND_ROWS}
-                  alt={`[Image #${n}]`}
-                />
-                <Text dimColor>#{n}</Text>
-              </Box>
-            )
-          })}
+        <Box flexDirection="row" paddingX={1}>
+          <Text>📎 </Text>
+          <Box flexDirection="row" gap={1}>
+            {ready.map(([n, image]) => {
+              const columns = columnsFor(image, BAND_ROWS, Math.max(1, room))
+              room -= columns + 1
+              return room < -1 ? null : (
+                <Box key={`b${n}`} flexDirection="column" width={columns}>
+                  <Image
+                    key={`band-${n}`}
+                    source={{ file: image.path, format: 'png', generation: Math.round(image.at) }}
+                    columns={columns}
+                    rows={BAND_ROWS}
+                    alt={`[Image #${n}]`}
+                  />
+                  <Text dimColor>#{n}</Text>
+                </Box>
+              )
+            })}
+          </Box>
         </Box>
         {await next(e)}
       </Box>
