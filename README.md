@@ -42,13 +42,17 @@ Pictures need the kitty graphics protocol. Elsewhere the mod draws the `[Image #
 | --- | --- |
 | Ghostty, kitty | yes |
 | Herdr | yes, with `CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1` (Claude Code reads Herdr as `libghostty`) |
-| tmux, screen | no: Claude Code turns graphics off inside a multiplexer |
+| tmux (in Ghostty or kitty) | yes, with `allow-passthrough on` and `CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1` |
+| screen | no: Claude Code turns graphics off inside a multiplexer |
 
-For Herdr, in your shell profile:
+In your shell profile and `~/.tmux.conf`:
 
 ```
-[[ "${HERDR_ENV:-}" == "1" ]] && export CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1
+[[ "${HERDR_ENV:-}" == "1" || -n "${TMUX:-}" ]] && export CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1
+set -g allow-passthrough on
 ```
+
+Inside tmux, Claude Code sends its kitty graphics without the tmux passthrough wrapper, so tmux drops them and every picture stays blank. The mod pipes its own pane (`tmux pipe-pane`) through a small Perl filter that copies each picture command back to the pane wrapped for passthrough. Image ids stay Claude Code's own. The pipe is skipped when the pane already has one.
 
 ## How it is built
 

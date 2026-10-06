@@ -37,6 +37,31 @@ async function sessionDirs($: EngineInterface) {
 
 const failed = new Set<string>()
 
+// Inside tmux the engine sends kitty graphics unwrapped and tmux drops them, so
+// pictures stay blank. A pipe on the pane copies each one back wrapped for passthrough
+// (and quiet, so no error reply lands in the prompt). Ids stay the engine's own.
+const REWRAP = String.raw`open(my $t, ">>", shift) or exit 1; binmode STDIN; binmode $t; $t->autoflush(1); my $b = "";
+while (sysread(STDIN, my $c, 65536)) {
+  $b .= $c; my $out = ""; my $last = 0;
+  while ($b =~ /(?<!\x1b)\x1b_G([^\x1b]*)\x1b\\/g) {
+    my $s = "\x1b_G$1\x1b\\"; $s =~ s/q=1/q=2/; $s =~ s/\x1b/\x1b\x1b/g;
+    $out .= "\x1bPtmux;$s\x1b\\"; $last = pos($b);
+  }
+  print $t $out if length $out;
+  my $i = rindex($b, "\x1b_G");
+  $b = $i >= $last && $i >= 0 ? substr($b, $i) : substr($b, -1);
+  $b = "" if length $b > 4194304;
+}`
+
+async function rewrapInTmux($: EngineInterface) {
+  const pane = await $.env.get('TMUX_PANE')
+  if (!(await $.env.get('TMUX')) || !pane) return
+  const shown = await $.process.run(['tmux', 'display', '-p', '-t', pane, '#{pane_pipe} #{pane_tty}'])
+  const [piping, tty] = shown.stdout.trim().split(' ')
+  if (shown.exitCode !== 0 || piping !== '0' || !tty?.startsWith('/dev/')) return
+  await $.process.run(['tmux', 'pipe-pane', '-o', '-t', pane, `exec perl -e '${REWRAP}' ${tty}`])
+}
+
 // The terminal reads PNG files only; other formats get a PNG copy. sips sizes it.
 async function toPng($: EngineInterface, source: string, copy: string, isPng: boolean) {
   let path = source
@@ -79,6 +104,7 @@ async function scan($: EngineInterface) {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const started = await next(e)
+    await rewrapInTmux($).catch(() => undefined)
     let busy = false
     $.clock.every(POLL_MS, async () => {
       if (busy) return
